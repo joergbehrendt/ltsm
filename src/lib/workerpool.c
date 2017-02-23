@@ -5,14 +5,11 @@
 
 #include "workerpool.h"
 
-//replace with list_t
-struct work *next_job = NULL;
-
 //fetch next job from queue and remove it from list - returns NULL if no job in queue
 struct work* worker_pool_get_next_job(struct worker_pool *pool){
 	pthread_mutex_lock(&pool->mutex_jobqueue);
-	struct work* pointer_to_work = next_job;
-	next_job = NULL;
+	struct work* pointer_to_work = NULL;
+	list_rem_next(&pool->jobqueue, NULL, (void **) &pointer_to_work); //fetch from head
 	pthread_mutex_unlock(&pool->mutex_jobqueue);
 	return pointer_to_work;
 }
@@ -24,16 +21,16 @@ void *worker_thread(void *data){
 	self->pool->function_setup(self);
 
 	while(self->running){
-//		printf("[%2i] WORK\n",self->id);
+		printf("[%2i] WORK\n",self->id);
 		struct work* job = worker_pool_get_next_job(self->pool);
-//		printf("[%2i] FETCHED\n",self->id);
+		printf("[%2i] FETCHED\n",self->id);
 		if(job != NULL){
-//			printf("[%2i] WORKING ON JOB\n", self->id);
+			printf("[%2i] WORKING ON JOB\n", self->id);
 			int rc = job->function_work(self, job->work_data);
 			printf("[%2i] JOB RETURNED %i\n", self->id, rc);
 		}else{
-//			printf("[%2i] EMPTY JOB - sleeping 1 sec\n", self->id);
-//			sleep(1);
+			printf("[%2i] EMPTY JOB - sleeping 1 sec\n", self->id);
+			sleep(1);
 		}
 		pthread_mutex_lock(&self->pool->mutex);
 
@@ -128,6 +125,7 @@ struct worker_pool* worker_pool_init(unsigned int count, int (*worker_setup_func
 	wp->running_id = 1;
 	wp->current_threads = 0;
 	wp->wanted_threads = count;
+	list_init(&wp->jobqueue, free);
 	pthread_mutex_unlock(&wp->mutex);
 
 
@@ -157,8 +155,8 @@ void worker_pool_set_wanted_thread_count(struct worker_pool* pool, unsigned int 
 void worker_pool_add_work(struct worker_pool *pool, struct work *job){
 	pthread_mutex_lock(&pool->mutex_jobqueue);
 	printf("Adding work to pool\n");
-	next_job = job;
-	printf("Added work to pool\n");
+	int rc = list_ins_next(&pool->jobqueue, list_tail(&pool->jobqueue), job); //ADDED TO TAIL
+	printf("Added work to pool RC:%i   q size:%i \n",rc, (int)list_size(&pool->jobqueue));
 	pthread_mutex_unlock(&pool->mutex_jobqueue);
 
 }

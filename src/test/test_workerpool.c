@@ -47,6 +47,7 @@ int function_work(const struct worker *w,const void* job_data){
         printf("  Thread Data: %i\n", *(int*) w->worker_data);
         printf("  Job Data   : %i\n", *(int*) job_data);
         printf("  Processing job end -- \n");
+	sleep(3);
         return 0;
 }
 /******************* JOB FUNCTIONS END ***********/
@@ -56,10 +57,10 @@ int function_work(const struct worker *w,const void* job_data){
 void test_workerpool(CuTest *tc)
 {
 
-	struct worker_pool *pool = worker_pool_init(3,worker_setup_function,worker_cleanup_function);
+	struct worker_pool *pool = worker_pool_init(25,worker_setup_function,worker_cleanup_function);
         CuAssertTrue(tc, pool != NULL);
 	sleep(2);
-        CuAssertTrue(tc, pool->current_threads == 3);
+        CuAssertTrue(tc, pool->current_threads == 25);
 
 	//create a job
   	struct work * job = malloc(sizeof(struct work));
@@ -67,29 +68,12 @@ void test_workerpool(CuTest *tc)
         int i = 42;
         job->work_data = &i;
 
-	//set pool threads to 30
-        worker_pool_set_wanted_thread_count(pool,30);
-	sleep(2);
-	CuAssertTrue(tc, pool->current_threads == 30);
-
-        worker_pool_set_wanted_thread_count(pool,3);
-	sleep(2);
-	CuAssertTrue(tc, pool->current_threads == 3);
-
-        worker_pool_set_wanted_thread_count(pool,13);
-	sleep(2);
-	CuAssertTrue(tc, pool->current_threads == 13);
-
-        worker_pool_set_wanted_thread_count(pool,20);
-	sleep(2);
-	CuAssertTrue(tc, pool->current_threads == 20);
-
-        for(int x = 0; x < 10; x++){
-		sleep(1);
+	printf("Inserting jobs  \n");
+        for(int x = 0; x < 100; x++){
                 worker_pool_add_work(pool, job);
         }
 
-	sleep(3);
+	sleep(10);
 	printf("Done Workerpool tests\n");
 }
 

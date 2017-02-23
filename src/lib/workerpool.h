@@ -2,6 +2,7 @@
 #define WORKERPOOL_H
 #include <pthread.h>
 
+#include "list.h"
 
 struct worker {
 	void *worker_data; //tsm sessio etc
@@ -16,6 +17,7 @@ struct work {
 };
 
 struct worker_pool {
+	list_t jobqueue;
 	pthread_mutex_t mutex;
 	pthread_mutex_t mutex_jobqueue;
 	unsigned int running_id;
