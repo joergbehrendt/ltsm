@@ -899,6 +899,8 @@ static dsInt16_t tsm_delete_hl_ll(const char *fs, const char *hl,
 	dsInt16_t rc;
 
 	rc = init_qtable(&session->qtable);
+	session->qtable.multiple = !session->overwrite_older;
+
 	if (rc)
 		return rc;
 
@@ -997,6 +999,8 @@ static dsInt16_t tsm_retrieve_generic(const char *fs, const char *hl,
 	get_list.objId = NULL;
 
 	rc = init_qtable(&session->qtable);
+	session->qtable.multiple = !session->overwrite_older;
+
 	if (rc)
 		return rc;
 
