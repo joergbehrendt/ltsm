@@ -801,7 +801,7 @@ cleanup:
 	return rc;
 }
 
-static dsInt16_t extract_hl_ll(const char *fpath, char *hl, char *ll)
+dsInt16_t extract_hl_ll(const char *fpath, char *hl, char *ll)
 {
 	size_t len, i;
 
