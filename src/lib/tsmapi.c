@@ -914,7 +914,7 @@ static dsInt16_t tsm_del_obj(const qryRespArchiveData *qry_resp_ar_data,
 
 static dsInt16_t tsm_delete_hl_ll(struct session_t *session)
 {
-	dsInt16_t rc;
+	dsInt16_t rc = DSM_RC_SUCCESSFUL;
 	qryRespArchiveData qra_data;
 
 	for (uint32_t n = 0; n < session->qtable.qarray.size; n++) {
