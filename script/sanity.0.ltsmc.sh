@@ -69,8 +69,7 @@ LTSM_BIN="src/ltsmc"
 LTSM_NODE=${TSM_NAME}
 LTSM_PASSWORD=${TSM_NAME}
 LTSM_SERVERNAME=${2-polaris-kvm-tsm-server}
-LTSM_VERBOSE=${3-message}
-export DSMI_CONFIG=`pwd`/dsmopt/dsm.sys
+LTSM_VERBOSE=${3-warn}
 
 PATH_PREFIX=`mktemp -d`
 MAX_NUM_FILES=35
@@ -89,11 +88,12 @@ for r in $(seq 1 5); do
     __rnd_files ${MAX_NUM_FILES} ${MAX_NESTED_DIRS} ${MAX_DIR_LEN}
 done
 
-MAX_NESTED_DIRS=5
-MAX_DIR_LEN=7
+
 ##########################################################
 # Create directories with empty files
 ##########################################################
+MAX_NESTED_DIRS=5
+MAX_DIR_LEN=7
 MAX_DIRS=4
 for r in $(seq 1 ${MAX_DIRS}); do
     DIR=$(__rnd_dirs ${MAX_NESTED_DIRS} ${MAX_DIR_LEN})
@@ -125,7 +125,7 @@ MD5_ORIG="/tmp/md5orig.txt"
 MD5_RETR="/tmp/md5retr.txt"
 
 echo "Creating MD5 sum file of original data: ${MD5_ORIG}"
-find ${PATH_PREFIX} -exec md5sum -b '{}' \; &> ${MD5_ORIG}
+find ${PATH_PREFIX} -exec md5sum -b '{}' \; |& sort > ${MD5_ORIG}
 
 ##########################################################
 # LTSM actions
@@ -142,7 +142,7 @@ ${LTSM_BIN} --verbose ${LTSM_VERBOSE} --retrieve -f '/' -n ${LTSM_NODE} -p ${LTS
 [ $? -eq 0 ] && { echo -e "done\n"; }
 
 echo "Creating MD5 sum file of retrieved data: ${MD5_RETR}"
-find ${PATH_PREFIX} -exec md5sum -b '{}' \; &> ${MD5_RETR}
+find ${PATH_PREFIX} -exec md5sum -b '{}' \; |& sort > ${MD5_RETR}
 
 # Finally remove data locally and also from TSM storage.
 rm -rf ${PATH_PREFIX}
@@ -157,11 +157,11 @@ fi
 
 # Final result and output
 if [ ${ARE_EQUAL} -eq 0 ] ; then
-    echo "Sanity successfully finished, archived and retrieved data match."
-    rm -rf ${MD5_ORIG} ${MD5_RETR} ${PATH_PREFIX}
+    echo -e "\n\033[0;32mSanity successfully finished. Archived and retrieved data match.\033[0m"
+    rm -rf ${MD5_ORIG} ${MD5_RETR}
 else
-    echo "Sanity failed, archived and retrieved data does not match."
-    rm -rf ${PATH_PREFIX} # Keep the md5sum files to figure out what is going on.
+    echo -e "\n\033[0;31mSanity failed. Archived and retrieved data does not match.\033[0m"
+     # Keep the md5sum files to figure out what is going on.
 fi
 
 exit ${ARE_EQUAL}

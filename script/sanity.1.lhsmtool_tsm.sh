@@ -4,6 +4,13 @@
 set -e
 VERBOSE=1
 
+
+function finish {
+    echo "Kill ltsmtool_hsm ${TASK_PID}"
+    kill ${TASK_PID}
+}
+trap finish EXIT
+
 __check_bin() {
     [[ ! -f "${1}" ]] && { echo "[ERROR]: Cannot find '${1}' binary"; exit 1; }
 
@@ -29,7 +36,7 @@ __rnd_files()
     local DIR=${2}
     local MIN_KB_SIZE=${3}
     local MAX_KB_SIZE=${4}
-    
+
     mkdir -p ${DIR}
     __log "Create ${NUM_FILES} file(s) in directory ${DIR}"
 
@@ -94,7 +101,7 @@ LHSMTOOL_TSM_BIN="src/lhsmtool_tsm"
 LHSMTOOL_TSM_NODE=${TSM_NAME}
 LHSMTOOL_TSM_PASSWORD=${TSM_NAME}
 LHSMTOOL_TSM_SERVERNAME=${2-polaris-kvm-tsm-server}
-export DSMI_CONFIG=`pwd`/dsmopt/dsm.sys
+LTSM_VERBOSE=${3-warn}
 
 PATH_LUSTRE_MOUNTPOINT='/lustre'
 PATH_DIR=${PATH_LUSTRE_MOUNTPOINT}`mktemp -d`
@@ -121,11 +128,16 @@ MD5_RETR="/tmp/md5retr.txt"
 rm -rf ${MD5_ORIG} ${MD5_RETR}
 
 echo "Creating MD5 sum file of original data: ${MD5_ORIG}"
-find ${PATH_DIR} -exec md5sum -b '{}' \; &> ${MD5_ORIG}
+find ${PATH_DIR} -exec md5sum -b '{}' \; |& sort > ${MD5_ORIG}
 
 # Clean state
 STRDEF_EMPTY="(0x00000000)"
 __hsm_match_state ${PATH_DIR} ${STRDEF_EMPTY}
+
+
+${LHSMTOOL_TSM_BIN} -v ${LTSM_VERBOSE} -n ${LHSMTOOL_TSM_NODE} -p ${LHSMTOOL_TSM_PASSWORD} -s ${LHSMTOOL_TSM_SERVERNAME} ${PATH_LUSTRE_MOUNTPOINT} &
+TASK_PID=$!
+echo "Started lhsmtool_tsm with pid ${TASK_PID}"
 
 # Archived state
 echo "archiving files in ${PATH_DIR}/*"
@@ -149,7 +161,7 @@ __hsm_match_and_wait ${PATH_DIR} "${STRDEF_ARCHIVE_EXISTS}"
 __hsm_match_state ${PATH_DIR} "${STRDEF_ARCHIVE_EXISTS}"
 
 echo "Creating MD5 sum file of retrieved data: ${MD5_RETR}"
-find ${PATH_DIR} -exec md5sum -b '{}' \; &> ${MD5_RETR}
+find ${PATH_DIR} -exec md5sum -b '{}' \; |& sort > ${MD5_RETR}
 
 # Delete state
 echo "deleting files in ${PATH_DIR}/*"
@@ -165,12 +177,13 @@ if diff -q ${MD5_ORIG} ${MD5_RETR}; then
 fi
 
 # Final result and output
-if [[ ${ARE_EQUAL} -eq 0 ]] ; then
-    echo "Sanity successfully finished, archived and retrieved data match."
-    rm -rf ${MD5_ORIG} ${MD5_RETR} ${PATH_DIR}
+if [ ${ARE_EQUAL} -eq 0 ] ; then
+    echo -e "\n\033[0;32mSanity successfully finished. Archived and retrieved data match.\033[0m"
+    rm -rf ${MD5_ORIG} ${MD5_RETR}
 else
-    echo "Sanity failed, archived and retrieved data does not match."
-    rm -rf ${PATH_DIR} # Keep the md5sum files to figure out what is going on.
+    echo -e "\n\033[0;31mSanity failed. Archived and retrieved data does not match.\033[0m"
+     # Keep the md5sum files to figure out what is going on.
 fi
+
 
 exit ${ARE_EQUAL}

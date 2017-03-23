@@ -25,7 +25,7 @@ LTSM_BIN="src/ltsmc"
 LTSM_NODE=${TSM_NAME}
 LTSM_PASSWORD=${TSM_NAME}
 LTSM_SERVERNAME=${2-polaris-kvm-tsm-server}
-export DSMI_CONFIG=`pwd`/dsmopt/dsm.sys
+LTSM_VERBOSE=${3-warn}
 
 PATH_PREFIX=`mktemp -d`
 
@@ -57,7 +57,7 @@ MD5_ORIG="/tmp/md5orig.txt"
 MD5_RETR="/tmp/md5retr.txt"
 
 echo "Creating MD5 sum file of original data: ${MD5_ORIG}"
-find ${PATH_PREFIX} -exec md5sum -b '{}' \; &> ${MD5_ORIG}
+find ${PATH_PREFIX} -exec md5sum -b '{}' \; |& sort > ${MD5_ORIG}
 
 # DUMMY VALUES WITH WRONG FILE DATA
 
@@ -84,23 +84,23 @@ cp ${PATH_PREFIX}/dummy_error_data.bin ${PATH_PREFIX}/both_test.bin
 {
 
 echo -e "\nTry\nArchiving 2 times read_test via ltsmc..."
-${LTSM_BIN} --verbose warn --archive -f '/' -n ${LTSM_NODE} -p ${LTSM_PASSWORD} -s ${LTSM_SERVERNAME} "${PATH_PREFIX}/read_test.bin"
+${LTSM_BIN} --verbose ${LTSM_VERBOSE} --archive -f '/' -n ${LTSM_NODE} -p ${LTSM_PASSWORD} -s ${LTSM_SERVERNAME} "${PATH_PREFIX}/read_test.bin"
 mv ${PATH_PREFIX}/read_test_o.bin ${PATH_PREFIX}/read_test.bin #restore original read_test.bin
-${LTSM_BIN} --verbose warn --archive -f '/' -n ${LTSM_NODE} -p ${LTSM_PASSWORD} -s ${LTSM_SERVERNAME} "${PATH_PREFIX}/read_test.bin"
+${LTSM_BIN} --verbose ${LTSM_VERBOSE} --archive -f '/' -n ${LTSM_NODE} -p ${LTSM_PASSWORD} -s ${LTSM_SERVERNAME} "${PATH_PREFIX}/read_test.bin"
 [ $? -eq 0 ] && { echo "done"; }
 
 
 echo "Archiving 2 times write_test via ltsmpipe..."
-cat ${PATH_PREFIX}/write_test.bin | ${PIPE_BIN} --verbose warn -f '/' -n ${LTSM_NODE} -p ${LTSM_PASSWORD} -s ${LTSM_SERVERNAME} "${PATH_PREFIX}/write_test.bin"
+cat ${PATH_PREFIX}/write_test.bin | ${PIPE_BIN} --verbose ${LTSM_VERBOSE} -f '/' -n ${LTSM_NODE} -p ${LTSM_PASSWORD} -s ${LTSM_SERVERNAME} "${PATH_PREFIX}/write_test.bin"
 mv ${PATH_PREFIX}/write_test_o.bin ${PATH_PREFIX}/write_test.bin #restore original write_test.bin
-cat ${PATH_PREFIX}/write_test.bin | ${PIPE_BIN} --verbose warn -f '/' -n ${LTSM_NODE} -p ${LTSM_PASSWORD} -s ${LTSM_SERVERNAME} "${PATH_PREFIX}/write_test.bin"
+cat ${PATH_PREFIX}/write_test.bin | ${PIPE_BIN} --verbose ${LTSM_VERBOSE} -f '/' -n ${LTSM_NODE} -p ${LTSM_PASSWORD} -s ${LTSM_SERVERNAME} "${PATH_PREFIX}/write_test.bin"
 [ $? -eq 0 ] && { echo "done"; }
 
 
 echo "Archiving 2 times both_test via ltsmpipe..."
-cat ${PATH_PREFIX}/both_test.bin | ${PIPE_BIN} --verbose warn -f '/' -n ${LTSM_NODE} -p ${LTSM_PASSWORD} -s ${LTSM_SERVERNAME} "/sanity_test/both_test.bin"
+cat ${PATH_PREFIX}/both_test.bin | ${PIPE_BIN} --verbose ${LTSM_VERBOSE} -f '/' -n ${LTSM_NODE} -p ${LTSM_PASSWORD} -s ${LTSM_SERVERNAME} "/sanity_test/both_test.bin"
 mv ${PATH_PREFIX}/both_test_o.bin ${PATH_PREFIX}/both_test.bin  #restore original both_test.bin
-cat ${PATH_PREFIX}/both_test.bin | ${PIPE_BIN} --verbose warn -f '/' -n ${LTSM_NODE} -p ${LTSM_PASSWORD} -s ${LTSM_SERVERNAME} "/sanity_test/both_test.bin"
+cat ${PATH_PREFIX}/both_test.bin | ${PIPE_BIN} --verbose ${LTSM_VERBOSE} -f '/' -n ${LTSM_NODE} -p ${LTSM_PASSWORD} -s ${LTSM_SERVERNAME} "/sanity_test/both_test.bin"
 [ $? -eq 0 ] && { echo "done"; }
 
 # First remove data locally, second retrieve data from TSM storage.
@@ -112,15 +112,15 @@ echo "Recreating tmp dir"
 mkdir -p ${PATH_PREFIX}
 
 echo "Read read_test via ltsmpipe..."
-${PIPE_BIN} --verbose warn -f '/' -n ${LTSM_NODE} -p ${LTSM_PASSWORD} -s ${LTSM_SERVERNAME} "${PATH_PREFIX}/read_test.bin" > ${PATH_PREFIX}/read_test.bin
+${PIPE_BIN} --verbose ${LTSM_VERBOSE} -f '/' -n ${LTSM_NODE} -p ${LTSM_PASSWORD} -s ${LTSM_SERVERNAME} "${PATH_PREFIX}/read_test.bin" > ${PATH_PREFIX}/read_test.bin
 [ $? -eq 0 ] && { echo "done"; }
 
 echo "Read write_test via ltsmc..."
-${LTSM_BIN} --verbose warn --retrieve -f '/' -n ${LTSM_NODE} -p ${LTSM_PASSWORD} -s ${LTSM_SERVERNAME} --latest "${PATH_PREFIX}/write_test.bin"
+${LTSM_BIN} --verbose ${LTSM_VERBOSE} --retrieve -f '/' -n ${LTSM_NODE} -p ${LTSM_PASSWORD} -s ${LTSM_SERVERNAME} --latest "${PATH_PREFIX}/write_test.bin"
 [ $? -eq 0 ] && { echo "done"; }
 
 echo "Read both_test via ltsmpipe..."
-${PIPE_BIN} --verbose warn -f '/' -n ${LTSM_NODE} -p ${LTSM_PASSWORD} -s ${LTSM_SERVERNAME} "/sanity_test/both_test.bin" > ${PATH_PREFIX}/both_test.bin
+${PIPE_BIN} --verbose ${LTSM_VERBOSE} -f '/' -n ${LTSM_NODE} -p ${LTSM_PASSWORD} -s ${LTSM_SERVERNAME} "/sanity_test/both_test.bin" > ${PATH_PREFIX}/both_test.bin
 [ $? -eq 0 ] && { echo "done"; }
 
 } && false
@@ -128,12 +128,12 @@ ${PIPE_BIN} --verbose warn -f '/' -n ${LTSM_NODE} -p ${LTSM_PASSWORD} -s ${LTSM_
 {
 echo -e "\nfinally"
 echo "Creating MD5 sum file of retrieved data: ${MD5_RETR}"
-find ${PATH_PREFIX} -exec md5sum -b '{}' \; &> ${MD5_RETR}
+find ${PATH_PREFIX} -exec md5sum -b '{}' \; |& sort > ${MD5_RETR}
 
 echo "Cleanup TSM objects and tmp folder..."
 rm -rf ${PATH_PREFIX}
-${LTSM_BIN} --verbose warn --delete -f '/' -n ${LTSM_NODE} -p ${LTSM_PASSWORD} -s ${LTSM_SERVERNAME} "${PATH_PREFIX}*/*"
-${LTSM_BIN} --verbose warn --delete -f '/' -n ${LTSM_NODE} -p ${LTSM_PASSWORD} -s ${LTSM_SERVERNAME} "/sanity_test*/*"
+${LTSM_BIN} --verbose ${LTSM_VERBOSE} --delete -f '/' -n ${LTSM_NODE} -p ${LTSM_PASSWORD} -s ${LTSM_SERVERNAME} "${PATH_PREFIX}*/*"
+${LTSM_BIN} --verbose ${LTSM_VERBOSE} --delete -f '/' -n ${LTSM_NODE} -p ${LTSM_PASSWORD} -s ${LTSM_SERVERNAME} "/sanity_test*/*"
 [ $? -eq 0 ] && { echo "done"; }
 
 # Check for equality
