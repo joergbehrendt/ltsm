@@ -19,7 +19,9 @@ AC_CONFIG_HEADERS([config.h])
 AC_PROG_AWK
 AC_PROG_CC
 AC_PROG_CC_STDC
+AM_PROG_CC_C_O
 AC_PROG_MAKE_SET
+AC_PROG_RANLIB
 
 # Use the C language and compiler for the following checks.
 AC_LANG([C])
